@@ -57,6 +57,7 @@ do(State, Tests) ->
     Providers = rebar_state:providers(State),
     Cwd = rebar_dir:get_cwd(),
     rebar_hooks:run_all_hooks(Cwd, pre, ?PROVIDER, Providers, State),
+    ok = rebar_app_config:reread_config(State, app_config, eunit_opts),
 
     case validate_tests(State, Tests) of
         {ok, T} ->
@@ -421,11 +422,13 @@ eunit_opts(_State) ->
      {file, undefined, "file", string, help(file)},
      {module, undefined, "module", string, help(module)},
      {suite, undefined, "suite", string, help(module)},
+     {app_config, undefined, "app_config", string, help(app_config)},
      {verbose, $v, "verbose", boolean, help(verbose)}].
 
-help(app)     -> "Comma separated list of application test suites to run. Equivalent to `[{application, App}]`.";
-help(cover)   -> "Generate cover data. Defaults to false.";
-help(dir)     -> "Comma separated list of dirs to load tests from. Equivalent to `[{dir, Dir}]`.";
-help(file)    -> "Comma separated list of files to load tests from. Equivalent to `[{file, File}]`.";
-help(module)  -> "Comma separated list of modules to load tests from. Equivalent to `[{module, Module}]`.";
-help(verbose) -> "Verbose output. Defaults to false.".
+help(app)        -> "Comma separated list of application test suites to run. Equivalent to `[{application, App}]`.";
+help(cover)      -> "Generate cover data. Defaults to false.";
+help(dir)        -> "Comma separated list of dirs to load tests from. Equivalent to `[{dir, Dir}]`.";
+help(file)       -> "Comma separated list of files to load tests from. Equivalent to `[{file, File}]`.";
+help(module)     -> "Comma separated list of modules to load tests from. Equivalent to `[{module, Module}]`.";
+help(app_config) -> "File with application configuration";
+help(verbose)    -> "Verbose output. Defaults to false.".

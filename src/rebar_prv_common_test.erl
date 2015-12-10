@@ -53,6 +53,7 @@ do(State, Tests) ->
     Providers = rebar_state:providers(State),
     Cwd = rebar_dir:get_cwd(),
     rebar_hooks:run_all_hooks(Cwd, pre, ?PROVIDER, Providers, State),
+    ok = rebar_app_config:reread_config(State, app_config, ct_opts),
 
     case Tests of
         {ok, T} ->
@@ -340,7 +341,7 @@ test_dirs(State, Apps, Opts) ->
         {Suites, Dir} when is_integer(hd(Dir)) ->
             set_compile_dirs(State, Apps, join(Suites, Dir));
         {Suites, [Dir]} when is_integer(hd(Dir)) ->
-            set_compile_dirs(State, Apps, join(Suites, Dir));          
+            set_compile_dirs(State, Apps, join(Suites, Dir));
         {_Suites, _Dirs}    -> {error, "Only a single directory may be specified when specifying suites"}
     end.
 
@@ -547,6 +548,7 @@ ct_opts(_State) ->
      {testcase, undefined, "case", string, help(testcase)}, %% comma-seperated list
      {label, undefined, "label", string, help(label)}, %% String
      {config, undefined, "config", string, help(config)}, %% comma-seperated list
+     {app_config, undefined, "app_config", string, help(app_config)}, %% String
      {allow_user_terms, undefined, "allow_user_terms", boolean, help(allow_user_terms)}, %% Bool
      {logdir, undefined, "logdir", string, help(logdir)}, %% dir
      {logopts, undefined, "logopts", string, help(logopts)}, %% comma seperated list
@@ -580,6 +582,8 @@ help(label) ->
     "Test label";
 help(config) ->
     "List of config files";
+help(app_config) ->
+    "File with application config";
 help(allow_user_terms) ->
     "Allow user defined config values in config files";
 help(logdir) ->

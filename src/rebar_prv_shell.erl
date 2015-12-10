@@ -209,11 +209,11 @@ maybe_boot_apps(State) ->
     case find_apps_to_boot(State) of
         undefined ->
             %% try to read in sys.config file
-            ok = reread_config(State);
+            ok = rebar_app_config:reread_config(State, config, shell);
         Apps ->
             %% load apps, then check config, then boot them.
             load_apps(Apps),
-            ok = reread_config(State),
+            ok = rebar_app_config:reread_config(State, config, shell),
             boot_apps(Apps)
     end.
 
@@ -290,17 +290,6 @@ load_apps(Apps) ->
             not lists:keymember(App, 1, application:loaded_applications())],
     ok.
 
-reread_config(State) ->
-    case find_config(State) of
-        no_config ->
-            ok;
-        ConfigList ->
-            _ = [application:set_env(Application, Key, Val)
-                  || {Application, Items} <- ConfigList,
-                     {Key, Val} <- Items],
-            ok
-    end.
-
 boot_apps(Apps) ->
     ?WARN("The rebar3 shell is a development tool; to deploy "
             "applications in production, consider using releases "
@@ -354,18 +343,6 @@ add_test_paths(State) ->
     _ = code:add_path(filename:join([rebar_dir:base_dir(State), "test"])),
     ok.
 
-% First try the --config flag, then try the relx sys_config
--spec find_config(rebar_state:t()) -> [tuple()] | no_config.
-find_config(State) ->
-    case first_value([fun find_config_option/1,
-                      fun find_config_rebar/1,
-                      fun find_config_relx/1], State) of
-        no_value ->
-            no_config;
-        Filename when is_list(Filename) ->
-            consult_config(State, Filename)
-    end.
-
 -spec first_value([Fun], State) -> no_value | Value when
       Value :: any(),
       State :: rebar_state:t(),
@@ -385,29 +362,4 @@ debug_get_value(Key, List, Default, Description) ->
         Value ->
             ?DEBUG(Description, []),
             Value
-    end.
-
--spec find_config_option(rebar_state:t()) -> Filename::list() | no_value.
-find_config_option(State) ->
-    {Opts, _} = rebar_state:command_parsed_args(State),
-    debug_get_value(config, Opts, no_value,
-                    "Found config from command line option.").
-
--spec find_config_rebar(rebar_state:t()) -> [tuple()] | no_value.
-find_config_rebar(State) ->
-    debug_get_value(config, rebar_state:get(State, shell, []), no_value,
-                    "Found config from rebar config file.").
-
--spec find_config_relx(rebar_state:t()) -> [tuple()] | no_value.
-find_config_relx(State) ->
-    debug_get_value(sys_config, rebar_state:get(State, relx, []), no_value,
-                    "Found config from relx.").
-
--spec consult_config(rebar_state:t(), string()) -> [tuple()].
-consult_config(State, Filename) ->
-    Fullpath = filename:join(rebar_dir:root_dir(State), Filename),
-    ?DEBUG("Loading configuration from ~p", [Fullpath]),
-    case rebar_file_utils:try_consult(Fullpath) of
-        [T] -> T;
-        [] -> []
     end.
